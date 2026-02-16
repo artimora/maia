@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using CopperDevs.Logger;
 
 namespace Artimora.Maia.Telepathy
 {

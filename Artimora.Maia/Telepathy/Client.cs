@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using CopperDevs.Logger;
 
 namespace Artimora.Maia.Telepathy
 {

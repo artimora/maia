@@ -11,6 +11,7 @@
 // NOT EVER be changed to non static!
 
 using System.Net.Sockets;
+using CopperDevs.Logger;
 
 namespace Artimora.Maia.Telepathy
 {
