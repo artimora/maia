@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Repo/">
+    <File Path="ReadMe.md" />
+    <File Path=".gitignore" />
+    <File Path="License.txt" />
+    <File Path="THIRD_PARTY_NOTICES.md" />
+  </Folder>
+  <Project Path="Artimora.Maia/Artimora.Maia.csproj" />
+</Solution>
