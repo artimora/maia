@@ -1,15 +1,9 @@
-using Artimora.Maia.Layers;
-
 namespace Artimora.Maia;
 
 public record struct ClientInitializationOptions()
 {
     public string Host = "127.0.0.1";
     public int Port = 8080;
-
-    // TODO: these two fields are only relevant to the TCP layer :p
-    public int MaxMessageSize = 2048;
-    public int ProcessLimit = 100;
 
     public AutoReconnectOptions AutoReconnect;
 

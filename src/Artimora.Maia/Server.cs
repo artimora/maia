@@ -1,20 +1,15 @@
-using Artimora.Maia.Layers;
-
 namespace Artimora.Maia;
 
 public record struct ServerInitializationOptions()
 {
     public int Port = 8080;
     
-    // TODO: these two fields are only relevant to the TCP layer :p
-    public int MaxMessageSize = 2048;
-    public int ProcessLimit = 100;
     public static ServerInitializationOptions Default => new();
 }
 
 public class Server<TLayer> where TLayer : NetworkLayer, new()
 {
-    private NetworkLayer network = new TLayer();
+    private readonly NetworkLayer network = new TLayer();
 
     public Action<Tuple<int, Message>> OnMessage = null!;
     public Action<int> OnClientConnect = null!;
@@ -33,7 +28,7 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
 
     public void SendToAllClients(Message message) => network.Send(message.Serialize());
 
-    public void GetClients() => network.GetClients();
+    public int[] GetClients() => network.GetClients();
 
     public void Stop() => network.Stop();
 

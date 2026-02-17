@@ -1,4 +1,4 @@
-namespace Artimora.Maia.Layers;
+namespace Artimora.Maia;
 
 public enum NetworkLayerState
 {

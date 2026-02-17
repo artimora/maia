@@ -1,6 +1,6 @@
-﻿using System.Text.Json;
-using Artimora.Maia.Layers;
-using CopperDevs.Logger;
+﻿using CopperDevs.Logger;
+
+// ReSharper disable FunctionNeverReturns
 
 namespace Artimora.Maia.Testing;
 
