@@ -1,9 +1,9 @@
 <Solution>
-  <Folder Name="/Repo/">
-    <File Path="ReadMe.md" />
-    <File Path=".gitignore" />
-    <File Path="License.txt" />
-  </Folder>
-  <Project Path="Artimora.Maia.Testing/Artimora.Maia.Testing.csproj" />
-  <Project Path="Artimora.Maia/Artimora.Maia.csproj" />
+    <Folder Name="/Repo/">
+        <File Path="ReadMe.md" />
+        <File Path=".gitignore" />
+        <File Path="License.txt" />
+    </Folder>
+    <Project Path="src/Artimora.Maia.Testing/Artimora.Maia.Testing.csproj" />
+    <Project Path="src/Artimora.Maia/Artimora.Maia.csproj" />
 </Solution>

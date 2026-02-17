@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        
+        <RootNamespace>Artimora.Maia</RootNamespace>
+        <PackageId>Artimora.Maia</PackageId>
+        <Title>Maia</Title>
+        <Authors>Artimora</Authors>
+        <Description>simple (and thin) message based networking library</Description>
+        <Copyright>MIT</Copyright>
+        <PackageProjectUrl>https://github.com/artimora/maia</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/artimora/maia</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <Company>Artimora</Company>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageLicenseFile>License.txt</PackageLicenseFile>
+        <PackageReadmeFile>ReadMe.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CopperDevs.Logger" Version="1.2.0" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Include="..\..\ReadMe.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+        <None Include="..\..\License.txt">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+    </ItemGroup>
+
+</Project>
