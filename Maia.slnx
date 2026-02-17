@@ -3,7 +3,6 @@
     <File Path="ReadMe.md" />
     <File Path=".gitignore" />
     <File Path="License.txt" />
-    <File Path="THIRD_PARTY_NOTICES.md" />
   </Folder>
   <Project Path="Artimora.Maia.Testing/Artimora.Maia.Testing.csproj" />
   <Project Path="Artimora.Maia/Artimora.Maia.csproj" />

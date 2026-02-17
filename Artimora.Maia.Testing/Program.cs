@@ -27,16 +27,16 @@ public static class Program
         server.OnMessage += (m) => Log.Network($"{m.Item1}: {m.Item2.id}");
         server.OnClientDisconnect += (id) => Log.Network($"{id} disconnected");
 
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             while (true)
             {
                 server.Tick();
-                Task.Delay(100);
+                await Task.Delay(100);
             }
         });
 
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             while (true)
             {
@@ -44,7 +44,7 @@ public static class Program
                 {
                     ["time"] = $"{DateTime.UtcNow.Millisecond}"
                 });
-                Task.Delay(2500);
+                await Task.Delay(1000);
             }
         });
     }
@@ -57,16 +57,16 @@ public static class Program
         client.OnMessage += (m) => Log.Network($"{m.id}");
         client.OnDisconnect += () => Log.Network("Disconnected");
 
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             while (true)
             {
                 client.Tick();
-                Task.Delay(100);
+                await Task.Delay(100);
             }
         });
 
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             while (true)
             {
@@ -74,7 +74,7 @@ public static class Program
                 {
                     ["time"] = $"{DateTime.UtcNow.Millisecond}"
                 });
-                Task.Delay(2500);
+                await Task.Delay(1000);
             }
         });
     }
