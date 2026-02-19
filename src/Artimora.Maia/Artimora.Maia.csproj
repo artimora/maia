@@ -15,12 +15,13 @@
         <RepositoryUrl>https://github.com/artimora/maia</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Company>Artimora</Company>
-        <AssemblyVersion>1.0.0.0</AssemblyVersion>
-        <FileVersion>1.0.0.0</FileVersion>
+        <AssemblyVersion>1.1.0.0</AssemblyVersion>
+        <FileVersion>1.1.0.0</FileVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
         <PackageLicenseFile>License.txt</PackageLicenseFile>
         <PackageReadmeFile>ReadMe.md</PackageReadmeFile>
+        <Version>1.1.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
