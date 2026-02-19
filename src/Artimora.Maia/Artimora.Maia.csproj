@@ -37,6 +37,7 @@
             <Pack>True</Pack>
             <PackagePath>\</PackagePath>
         </None>
+        <None Remove="Artimora.Maia.csproj.DotSettings" />
     </ItemGroup>
 
 </Project>
