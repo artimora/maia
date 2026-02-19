@@ -24,7 +24,7 @@ public static class Program
         var server = new Server<TCPNetworkingLayer>(ServerInitializationOptions.Default);
 
         server.OnClientConnect += (id) => Log.Network($"{id} connected");
-        server.OnMessage += (m) => Log.Network($"{m.Item1}: {m.Item2.id}");
+        server.OnMessage += (m) => Log.Network($"{m.client}: {m.message.id}");
         server.OnClientDisconnect += (id) => Log.Network($"{id} disconnected");
 
         Task.Run(async () =>

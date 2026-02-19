@@ -11,7 +11,7 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
 {
     private readonly NetworkLayer network = new TLayer();
 
-    public Action<Tuple<int, Message>> OnMessage = null!;
+    public Action<(int client, Message message)> OnMessage = null!;
     public Action<int> OnClientConnect = null!;
     public Action<int> OnClientDisconnect = null!;
 
@@ -19,7 +19,7 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
     {
         network.StartServer(options);
 
-        network.SetOnMessage((m) => OnMessage?.Invoke(new Tuple<int, Message>(m.Item1, Message.Deserialize(m.Item2))));
+        network.SetOnMessage((m) => OnMessage?.Invoke((m.client, Message.Deserialize(m.data))));
         network.SetOnConnection(m => OnClientConnect?.Invoke(m.clientId ?? -1));
         network.SetOnDisconnect(m => OnClientDisconnect?.Invoke(m.clientId ?? -1));
     }

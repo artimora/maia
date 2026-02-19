@@ -32,7 +32,7 @@ public abstract class NetworkLayer
     public abstract void SendToClient(int clientId, byte[] data);
     public abstract int[] GetClients();
 
-    public abstract void SetOnMessage(Action<Tuple<int, byte[]>> handler);
+    public abstract void SetOnMessage(Action<(int client, byte[] data)> handler);
     public abstract void SetOnConnection(Action<HandlerMetaData> handler);
     public abstract void SetOnDisconnect(Action<HandlerMetaData> handler);
 }

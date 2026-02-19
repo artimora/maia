@@ -26,7 +26,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
     private readonly List<byte[]> sendQueue = []; // store unframed
 
     // inbound "push up"
-    private Action<Tuple<int, byte[]>>? onMessage;
+    private Action<(int client, byte[] data)>? onMessage;
     private Action<HandlerMetaData>? onConnection;
     private Action<HandlerMetaData>? onDisconnect;
 
@@ -35,7 +35,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
 
     public override NetworkLayerState GetState() => currentState;
 
-    public override void SetOnMessage(Action<Tuple<int, byte[]>> handler) => onMessage = handler;
+    public override void SetOnMessage(Action<(int client, byte[] data)> handler) => onMessage = handler;
     public override void SetOnConnection(Action<HandlerMetaData> handler) => onConnection = handler;
     public override void SetOnDisconnect(Action<HandlerMetaData> handler) => onDisconnect = handler;
 
@@ -253,7 +253,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
             {
                 recv = DrainFrames(
                     recv,
-                    emit: payload => onMessage?.Invoke(Tuple.Create(clientId, payload)),
+                    emit: payload => onMessage?.Invoke((clientId, payload)),
                     side: HandlerMetaData.Side.Server
                 );
             }
@@ -349,7 +349,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         {
             clientRecv = DrainFrames(
                 clientRecv,
-                emit: payload => onMessage?.Invoke(Tuple.Create(0, payload)),
+                emit: payload => onMessage?.Invoke((-1, payload)),
                 side: HandlerMetaData.Side.Client
             );
         }
