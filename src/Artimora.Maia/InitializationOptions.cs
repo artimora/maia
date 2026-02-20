@@ -3,6 +3,8 @@ namespace Artimora.Maia;
 public record BaseInitializationOptions
 {
     public int Port = 8080;
+
+    public IFunctionHandler FunctionHandler = new GenericFunctionHandler();
 }
 
 public record ClientInitializationOptions : BaseInitializationOptions
