@@ -31,9 +31,9 @@ public static class Program
         {
             var left = int.Parse(args["left"]);
             var right = int.Parse(args["right"]);
-
+        
             var result = left + right;
-
+        
             return new Dictionary<string, string>
             {
                 ["result"] = $"{result}"
@@ -88,9 +88,10 @@ public static class Program
                     ["right"] = $"{right}"
                 });
 
-                var numericalResults = results["result"];
-
-                Log.Debug($"{left} + {right} = {numericalResults}");
+                if (results.TryGetValue("result", out var numericalResults))
+                    Log.Debug($"{left} + {right} = {numericalResults}");
+                else
+                    Log.Error($"Couldn't get result. Error value: {results["artimora:error"]}");
 
                 await Task.Delay(1000);
             }
