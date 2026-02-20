@@ -36,7 +36,8 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public void Stop() => network.Stop();
     public void Tick() => network.Tick();
 
-    public Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string>? args) => functions.CallFunction(functionName, args);
+    public Task<Dictionary<string, string>> CallFunction(string functionName) => CallFunction(functionName, []);
+    public Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string> args) => functions.CallFunction(functionName, args);
 
     public void RegisterFunction(string functionName, Func<Dictionary<string, string>, Dictionary<string, string>> func, bool forceSet = false) => functions.RegisterFunction(functionName, func, forceSet);
 }
