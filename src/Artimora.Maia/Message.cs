@@ -9,6 +9,9 @@ public class Message(string id)
     public readonly string id = id;
     
     private Dictionary<string, string> values = [];
+    
+    public Dictionary<string, string> GetValues() => values; 
+    public void SetValues(Dictionary<string, string> newValues) => values = newValues; 
 
     public string this[string key]
     {

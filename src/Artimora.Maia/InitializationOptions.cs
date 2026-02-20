@@ -1,13 +1,13 @@
 namespace Artimora.Maia;
 
-public record BaseInitializationOptions
+public record BaseInitializationOptions(HandlerMetaData.Side Side)
 {
     public int Port = 8080;
 
-    public IFunctionHandler FunctionHandler = new GenericFunctionHandler();
+    public IFunctionHandler FunctionHandler = new GenericFunctionHandler(Side);
 }
 
-public record ClientInitializationOptions : BaseInitializationOptions
+public record ClientInitializationOptions() : BaseInitializationOptions(HandlerMetaData.Side.Client)
 {
     public string Host = "127.0.0.1";
 
@@ -22,7 +22,7 @@ public record ClientInitializationOptions : BaseInitializationOptions
     public static ClientInitializationOptions Default => new();
 }
 
-public record ServerInitializationOptions : BaseInitializationOptions
+public record ServerInitializationOptions() : BaseInitializationOptions(HandlerMetaData.Side.Server)
 {
     public static ServerInitializationOptions Default => new();
 }

@@ -23,14 +23,20 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
         network.SetOnDisconnect(_ => OnDisconnect?.Invoke());
 
         functions = options.FunctionHandler;
+        functions.RegisterMessageSender((m) =>
+        {
+            if (m.TargetSide == HandlerMetaData.Side.Client)
+                Send(m.MessageContents);
+        });
+        OnMessage += (message => functions.OnMessage(-1, message));
     }
 
     public void Send(Message message) => network.Send(message.Serialize());
 
     public void Stop() => network.Stop();
     public void Tick() => network.Tick();
-    
+
     public Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string>? args) => functions.CallFunction(functionName, args);
 
-    public void RegisterFunction(string functionName, Func<Dictionary<string, string>, Dictionary<string, string>> func) => functions.RegisterFunction(functionName, func);
+    public void RegisterFunction(string functionName, Func<Dictionary<string, string>, Dictionary<string, string>> func, bool forceSet = false) => functions.RegisterFunction(functionName, func, forceSet);
 }
