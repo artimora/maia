@@ -1,20 +1,5 @@
 namespace Artimora.Maia;
 
-public record struct ClientInitializationOptions()
-{
-    public string Host = "127.0.0.1";
-    public int Port = 8080;
-
-    public AutoReconnectOptions AutoReconnect;
-
-    public record struct AutoReconnectOptions()
-    {
-        public int DelayMs = 2000;
-        public int MaxAttempts = 10;
-    }
-
-    public static ClientInitializationOptions Default => new();
-}
 
 public class Client<TLayer> where TLayer : NetworkLayer, new()
 {
@@ -24,6 +9,10 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public Action OnConnection = null!;
     public Action OnDisconnect = null!;
 
+    public Client() : this(ClientInitializationOptions.Default)
+    {
+    }
+    
     public Client(ClientInitializationOptions options)
     {
         network.StartClient(options);

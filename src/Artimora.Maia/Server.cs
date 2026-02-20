@@ -1,12 +1,5 @@
 namespace Artimora.Maia;
 
-public record struct ServerInitializationOptions()
-{
-    public int Port = 8080;
-    
-    public static ServerInitializationOptions Default => new();
-}
-
 public class Server<TLayer> where TLayer : NetworkLayer, new()
 {
     private readonly NetworkLayer network = new TLayer();
@@ -14,6 +7,10 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
     public Action<(int client, Message message)> OnMessage = null!;
     public Action<int> OnClientConnect = null!;
     public Action<int> OnClientDisconnect = null!;
+
+    public Server() : this(ServerInitializationOptions.Default)
+    {
+    }
 
     public Server(ServerInitializationOptions options)
     {
