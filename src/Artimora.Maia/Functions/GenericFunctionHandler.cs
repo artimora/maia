@@ -75,10 +75,10 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
 
         var targetSide = side == HandlerMetaData.Side.Client ? HandlerMetaData.Side.Server : HandlerMetaData.Side.Client;
 
-        messageSender?.Invoke(new FunctionSenderData(targetSide, toSend, targetClient));
-
         var tcs = new TaskCompletionSource<Message>(
             TaskCreationOptions.RunContinuationsAsynchronously);
+        
+        messageSender?.Invoke(new FunctionSenderData(targetSide, toSend, targetClient));
 
         if (!returnQueue.TryAdd(id, tcs))
             throw new InvalidOperationException("Duplicate returnId");
