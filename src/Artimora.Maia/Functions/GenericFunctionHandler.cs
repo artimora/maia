@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using CopperDevs.Logger;
 
 namespace Artimora.Maia;
@@ -8,11 +9,11 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
 
     private readonly Dictionary<string, Func<Dictionary<string, string>, Dictionary<string, string>>> functions = [];
 
-    private readonly Dictionary<Guid, Message> returnQueue = [];
+    private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> returnQueue =[];
 
     public void OnMessage(int client, Message message)
     {
-        if (message.id == "artimora.function_call")
+        if (message.id == "artimora:function_call")
         {
             var functionName = message["artimora:function_name"];
             var functionReturnId = message["artimora:function_return_id"];
@@ -26,13 +27,19 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
             var toSend = new Message("artimora:function_results");
             toSend.SetValues(results);
 
-            messageSender?.Invoke(new FunctionSenderData(side, toSend, client));
+            var targetSide = side == HandlerMetaData.Side.Client ? HandlerMetaData.Side.Server : HandlerMetaData.Side.Client;
+
+            messageSender?.Invoke(new FunctionSenderData(targetSide, toSend, client));
         }
 
         if (message.id == "artimora:function_results")
         {
             var returnId = Guid.Parse(message["artimora:function_return_id"]);
-            returnQueue[returnId] = message;
+            
+            if (returnQueue.TryRemove(returnId, out var tcs))
+            {
+                tcs.TrySetResult(message);
+            }
         }
     }
 
@@ -47,20 +54,25 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
         var id = Guid.NewGuid();
 
         args["artimora:function_name"] = functionName;
-        args["artimora:function_return_id"] = Guid.NewGuid().ToString();
+        args["artimora:function_return_id"] = id.ToString();
+
 
         var toSend = new Message("artimora:function_call");
+        toSend.SetValues(args);
 
-        messageSender?.Invoke(new FunctionSenderData(side, toSend, targetClient));
+        var targetSide = side == HandlerMetaData.Side.Client ? HandlerMetaData.Side.Server : HandlerMetaData.Side.Client;
 
-        await Task.Run(async () =>
-        {
-            while (!returnQueue.ContainsKey(id))
-                await Task.Delay(100);
-        });
+        messageSender?.Invoke(new FunctionSenderData(targetSide, toSend, targetClient));
 
-        var results = returnQueue[id];
-        return results.GetValues();
+        var tcs = new TaskCompletionSource<Message>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        if (!returnQueue.TryAdd(id, tcs))
+            throw new InvalidOperationException("Duplicate returnId");
+
+        var response = await tcs.Task;
+
+        return response.GetValues();
     }
 
     public void RegisterFunction(string functionName, Func<Dictionary<string, string>, Dictionary<string, string>> func, bool forceSet = false)

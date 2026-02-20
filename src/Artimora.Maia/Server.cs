@@ -25,7 +25,7 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
         functions = options.FunctionHandler;
         functions.RegisterMessageSender((m) =>
         {
-            if (m.TargetSide == HandlerMetaData.Side.Server)
+            if (m.TargetSide == HandlerMetaData.Side.Client)
                 SendToClient(m.TargetClient, m.MessageContents);
         });
         OnMessage += (data => functions.OnMessage(data.client, data.message));

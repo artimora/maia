@@ -27,6 +27,19 @@ public static class Program
         server.OnMessage += (m) => Log.Network($"{m.client}: {m.message.id}");
         server.OnClientDisconnect += (id) => Log.Network($"{id} disconnected");
 
+        server.RegisterFunction("addition", (args =>
+        {
+            var left = int.Parse(args["left"]);
+            var right = int.Parse(args["right"]);
+
+            var result = left + right;
+
+            return new Dictionary<string, string>
+            {
+                ["result"] = $"{result}"
+            };
+        }));
+
         Task.Run(async () =>
         {
             while (true)
@@ -40,10 +53,6 @@ public static class Program
         {
             while (true)
             {
-                server.SendToAllClients(new Message("testing:time")
-                {
-                    ["time"] = $"{DateTime.UtcNow.Millisecond}"
-                });
                 await Task.Delay(1000);
             }
         });
@@ -70,10 +79,19 @@ public static class Program
         {
             while (true)
             {
-                client.Send(new Message("testing:time")
+                const int left = 1;
+                const int right = 2;
+
+                var results = await client.CallFunction("addition", new Dictionary<string, string>()
                 {
-                    ["time"] = $"{DateTime.UtcNow.Millisecond}"
+                    ["left"] = $"{left}",
+                    ["right"] = $"{right}"
                 });
+
+                var numericalResults = results["result"];
+
+                Log.Debug($"{left} + {right} = {numericalResults}");
+
                 await Task.Delay(1000);
             }
         });
