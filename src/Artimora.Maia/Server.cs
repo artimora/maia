@@ -8,6 +8,10 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
     public Action<int> OnClientConnect = null!;
     public Action<int> OnClientDisconnect = null!;
 
+    public Server() : this(ServerInitializationOptions.Default)
+    {
+    }
+
     public Server(ServerInitializationOptions options)
     {
         network.StartServer(options);

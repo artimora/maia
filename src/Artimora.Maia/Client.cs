@@ -9,6 +9,10 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public Action OnConnection = null!;
     public Action OnDisconnect = null!;
 
+    public Client() : this(ClientInitializationOptions.Default)
+    {
+    }
+    
     public Client(ClientInitializationOptions options)
     {
         network.StartClient(options);
