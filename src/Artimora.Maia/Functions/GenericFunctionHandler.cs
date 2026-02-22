@@ -10,6 +10,10 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
     private readonly Dictionary<string, Func<Dictionary<string, string>, Dictionary<string, string>>> functions = [];
 
     private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Message>> returnQueue = [];
+    private readonly ConcurrentBag<Guid> cancelledTasks = [];
+
+    private BaseInitializationOptions options = null!;
+    public void SetOptions(BaseInitializationOptions newOptions) => options = newOptions;
 
     public void OnMessage(int client, Message message)
     {
@@ -17,7 +21,7 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
         {
             var functionName = message["artimora:function_name"];
             var functionReturnId = message["artimora:function_return_id"];
-            
+
             var targetSide = side == HandlerMetaData.Side.Client ? HandlerMetaData.Side.Server : HandlerMetaData.Side.Client;
 
             if (!functions.TryGetValue(functionName, out var func))
@@ -50,6 +54,12 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
         {
             var returnId = Guid.Parse(message["artimora:function_return_id"]);
 
+            if (cancelledTasks.Contains(returnId))
+            {
+                Log.Warn($"Function call {returnId} has finally arrived, but has already been cancelled");
+                return;
+            }
+
             if (returnQueue.TryRemove(returnId, out var tcs))
             {
                 tcs.TrySetResult(message);
@@ -65,11 +75,11 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
             ? int.Parse(arg)
             : -1;
 
-        var id = Guid.NewGuid();
+        var id = Guid.NewGuid(); // could check returnQueue and cancelledTasks to make sure we didn't already generate an id
 
         args["artimora:function_name"] = functionName;
         args["artimora:function_return_id"] = id.ToString();
-        
+
         var toSend = new Message("artimora:function_call");
         toSend.SetValues(args);
 
@@ -77,14 +87,25 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
 
         var tcs = new TaskCompletionSource<Message>(
             TaskCreationOptions.RunContinuationsAsynchronously);
-        
+
         messageSender?.Invoke(new FunctionSenderData(targetSide, toSend, targetClient));
 
         if (!returnQueue.TryAdd(id, tcs))
             throw new InvalidOperationException("Duplicate returnId");
 
+        var timeout = TimeSpan.FromMilliseconds(options.FunctionTimeout);
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+
+        if (completed != tcs.Task)
+        {
+            returnQueue.TryRemove(id, out _);
+            cancelledTasks.Add(id);
+            Log.Warn($"Function call {id} timed out after {timeout.TotalSeconds}s");
+            return new Dictionary<string, string> { ["artimora:error"] = "timeout" };
+        }
+
         var response = await tcs.Task;
-        
+
         return response.GetValues();
     }
 

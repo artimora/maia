@@ -23,6 +23,7 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
         network.SetOnDisconnect(m => OnClientDisconnect?.Invoke(m.clientId ?? -1));
 
         functions = options.FunctionHandler;
+        functions.SetOptions(options);
         functions.RegisterMessageSender((m) =>
         {
             if (m.TargetSide == HandlerMetaData.Side.Client)

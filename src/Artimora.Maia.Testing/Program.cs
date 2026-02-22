@@ -29,11 +29,13 @@ public static class Program
 
         server.RegisterFunction("addition", (args =>
         {
+            Thread.Sleep(Random.Shared.Next(250, 1500)); // testing timeouts
+            
             var left = int.Parse(args["left"]);
             var right = int.Parse(args["right"]);
-        
+
             var result = left + right;
-        
+
             return new Dictionary<string, string>
             {
                 ["result"] = $"{result}"
@@ -60,7 +62,7 @@ public static class Program
 
     private static async Task ClientMain()
     {
-        var client = new Client<TCPNetworkingLayer>(ClientInitializationOptions.Default);
+        var client = new Client<TCPNetworkingLayer>(ClientInitializationOptions.Default with { FunctionTimeout = 1000 }); // short timeout for testing
 
         client.OnConnection += () => Log.Network("Connected");
         client.OnMessage += (m) => Log.Network($"{m.id}");

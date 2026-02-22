@@ -4,6 +4,10 @@ public record BaseInitializationOptions(HandlerMetaData.Side Side)
 {
     public int Port = 8080;
 
+    /// <summary>
+    /// Time to wait for a function call before cancelling it and returning early
+    /// </summary>
+    public int FunctionTimeout = 8000;
     public IFunctionHandler FunctionHandler = new GenericFunctionHandler(Side);
 }
 

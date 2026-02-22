@@ -1,3 +1,5 @@
+using CopperDevs.Logger;
+
 namespace Artimora.Maia;
 
 public class Client<TLayer> where TLayer : NetworkLayer, new()
@@ -18,11 +20,12 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     {
         network.StartClient(options);
 
-        network.SetOnMessage((m) => OnMessage?.Invoke(Message.Deserialize(m.Item2)));
+        network.SetOnMessage((m) => OnMessage?.Invoke(Message.Deserialize(m.data)));
         network.SetOnConnection(_ => OnConnection?.Invoke());
         network.SetOnDisconnect(_ => OnDisconnect?.Invoke());
 
         functions = options.FunctionHandler;
+        functions.SetOptions(options);
         functions.RegisterMessageSender((m) =>
         {
             if (m.TargetSide == HandlerMetaData.Side.Server)

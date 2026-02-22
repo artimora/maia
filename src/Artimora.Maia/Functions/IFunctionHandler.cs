@@ -6,6 +6,8 @@ namespace Artimora.Maia;
 // 4. result is returned to the CallFunction call
 public interface IFunctionHandler
 {
+    public void SetOptions(BaseInitializationOptions newOptions);
+    
     public void OnMessage(int client, Message message);
     public void RegisterMessageSender(Action<FunctionSenderData> sender);
     
