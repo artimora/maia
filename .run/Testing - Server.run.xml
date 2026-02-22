@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Testing - Server" type="DotNetProject" factoryName=".NET Project">
-    <option name="EXE_PATH" value="$PROJECT_DIR$/src/Artimora.Maia.Testing/bin/Debug/net10.0/Artimora.Maia.Testing" />
+    <option name="EXE_PATH" value="$PROJECT_DIR$/src/Artimora.Maia.Testing/bin/Debug/net10.0/Artimora.Maia.Testing.dll" />
     <option name="PROGRAM_PARAMETERS" value="server" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/Artimora.Maia.Testing/bin/Debug/net10.0" />
     <option name="PASS_PARENT_ENVS" value="1" />
