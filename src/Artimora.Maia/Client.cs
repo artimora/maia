@@ -1,5 +1,3 @@
-using CopperDevs.Logger;
-
 namespace Artimora.Maia;
 
 public class Client<TLayer> where TLayer : NetworkLayer, new()

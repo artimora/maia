@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using CopperDevs.Logger;
+using CopperDevs.Celesium;
 
 namespace Artimora.Maia;
 

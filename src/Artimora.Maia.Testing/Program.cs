@@ -1,4 +1,5 @@
-﻿using CopperDevs.Logger;
+﻿using CopperDevs.Celesium;
+using Random = CopperDevs.Celesium.Random;
 
 // ReSharper disable FunctionNeverReturns
 
@@ -29,7 +30,7 @@ public static class Program
 
         server.RegisterFunction("addition", (args =>
         {
-            Thread.Sleep(Random.Shared.Next(250, 1500)); // testing timeouts
+            Thread.Sleep(Random.Range(250, 1500)); // testing timeouts
             
             var left = int.Parse(args["left"]);
             var right = int.Parse(args["right"]);
@@ -42,7 +43,7 @@ public static class Program
             };
         }));
 
-        Task.Run(async () =>
+        Task.BackgroundRun(async () =>
         {
             while (true)
             {
@@ -68,7 +69,7 @@ public static class Program
         client.OnMessage += (m) => Log.Network($"{m.id}");
         client.OnDisconnect += () => Log.Network("Disconnected");
 
-        Task.Run(async () =>
+        Task.BackgroundRun(async () =>
         {
             while (true)
             {

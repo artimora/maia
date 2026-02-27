@@ -25,7 +25,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="CopperDevs.Logger" Version="1.2.0" />
+      <PackageReference Include="CopperDevs.Celesium" Version="1.0.1" />
     </ItemGroup>
     
     <ItemGroup>
