@@ -3,6 +3,10 @@ using CopperDevs.Logger;
 
 namespace Artimora.Maia;
 
+/// <summary>
+/// Default <see cref="IFunctionHandler"/> implementation that routes function calls over Maia messages and resolves asynchronous call results.
+/// </summary>
+/// <param name="side">The local side this handler is attached to.</param>
 public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandler
 {
     private Action<FunctionSenderData> messageSender = null!;
@@ -13,8 +17,11 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
     private readonly ConcurrentBag<Guid> cancelledTasks = [];
 
     private BaseInitializationOptions options = null!;
+
+    /// <inheritdoc />
     public void SetOptions(BaseInitializationOptions newOptions) => options = newOptions;
 
+    /// <inheritdoc />
     public void OnMessage(int client, Message message)
     {
         if (message.id == "artimora:function_call")
@@ -67,8 +74,10 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
         }
     }
 
+    /// <inheritdoc />
     public void RegisterMessageSender(Action<FunctionSenderData> sender) => messageSender = sender;
 
+    /// <inheritdoc />
     public async Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string> args)
     {
         var targetClient = args.TryGetValue("artimora:target_client", out var arg)
@@ -109,6 +118,7 @@ public class GenericFunctionHandler(HandlerMetaData.Side side) : IFunctionHandle
         return response.GetValues();
     }
 
+    /// <inheritdoc />
     public void RegisterFunction(string functionName, Func<Dictionary<string, string>, Dictionary<string, string>> func, bool forceSet = false)
     {
         if (functions.ContainsKey(functionName) && !forceSet)

@@ -5,9 +5,13 @@ public record BaseInitializationOptions(HandlerMetaData.Side Side)
     public int Port = 8080;
 
     /// <summary>
-    /// Time to wait for a function call before cancelling it and returning early
+    /// Time in milliseconds to wait for a function call result before returning a timeout error.
     /// </summary>
     public int FunctionTimeout = 8000;
+
+    /// <summary>
+    /// Function handler implementation used for registering and dispatching remote function calls.
+    /// </summary>
     public IFunctionHandler FunctionHandler = new GenericFunctionHandler(Side);
 }
 

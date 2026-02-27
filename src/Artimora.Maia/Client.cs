@@ -39,8 +39,38 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public void Stop() => network.Stop();
     public void Tick() => network.Tick();
 
+    /// <summary>
+    /// Calls a function on the connected server with no arguments.
+    /// </summary>
+    /// <param name="functionName">The function name to invoke.</param>
+    /// <returns>
+    /// A dictionary containing the returned values and an <c>artimora:error</c> status entry.
+    /// </returns>
+    /// <remarks>
+    /// If <c>artimora:error</c> is anything other than <c>none</c>, function result entries may be missing.
+    /// </remarks>
     public Task<Dictionary<string, string>> CallFunction(string functionName) => CallFunction(functionName, []);
+
+    /// <summary>
+    /// Calls a function on the connected server.
+    /// </summary>
+    /// <param name="functionName">The function name to invoke.</param>
+    /// <param name="args">Function arguments to send to the server.</param>
+    /// <returns>
+    /// A dictionary containing the returned values and an <c>artimora:error</c> status entry.
+    /// </returns>
+    /// <remarks>
+    /// If <c>artimora:error</c> is anything other than <c>none</c>, function result entries may be missing.
+    /// </remarks>
     public Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string> args) => functions.CallFunction(functionName, args);
 
+    /// <summary>
+    /// Registers a client-side function that can be invoked by the server.
+    /// </summary>
+    /// <param name="functionName">The function identifier exposed to the server.</param>
+    /// <param name="func">The function implementation.</param>
+    /// <param name="forceSet">
+    /// If <see langword="true"/>, replaces an existing function with the same name.
+    /// </param>
     public void RegisterFunction(string functionName, Func<Dictionary<string, string>, Dictionary<string, string>> func, bool forceSet = false) => functions.RegisterFunction(functionName, func, forceSet);
 }
