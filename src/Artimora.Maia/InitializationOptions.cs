@@ -1,11 +1,21 @@
 namespace Artimora.Maia;
 
-public record BaseInitializationOptions
+public record BaseInitializationOptions(HandlerMetaData.Side Side)
 {
     public int Port = 8080;
+
+    /// <summary>
+    /// Time in milliseconds to wait for a function call result before returning a timeout error.
+    /// </summary>
+    public int FunctionTimeout = 8000;
+
+    /// <summary>
+    /// Function handler implementation used for registering and dispatching remote function calls.
+    /// </summary>
+    public IFunctionHandler FunctionHandler = new GenericFunctionHandler(Side);
 }
 
-public record ClientInitializationOptions : BaseInitializationOptions
+public record ClientInitializationOptions() : BaseInitializationOptions(HandlerMetaData.Side.Client)
 {
     public string Host = "127.0.0.1";
 
@@ -20,7 +30,7 @@ public record ClientInitializationOptions : BaseInitializationOptions
     public static ClientInitializationOptions Default => new();
 }
 
-public record ServerInitializationOptions : BaseInitializationOptions
+public record ServerInitializationOptions() : BaseInitializationOptions(HandlerMetaData.Side.Server)
 {
     public static ServerInitializationOptions Default => new();
 }

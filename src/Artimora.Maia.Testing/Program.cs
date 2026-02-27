@@ -27,6 +27,21 @@ public static class Program
         server.OnMessage += (m) => Log.Network($"{m.client}: {m.message.id}");
         server.OnClientDisconnect += (id) => Log.Network($"{id} disconnected");
 
+        server.RegisterFunction("addition", (args =>
+        {
+            Thread.Sleep(Random.Shared.Next(250, 1500)); // testing timeouts
+            
+            var left = int.Parse(args["left"]);
+            var right = int.Parse(args["right"]);
+
+            var result = left + right;
+
+            return new Dictionary<string, string>
+            {
+                ["result"] = $"{result}"
+            };
+        }));
+
         Task.Run(async () =>
         {
             while (true)
@@ -40,10 +55,6 @@ public static class Program
         {
             while (true)
             {
-                server.SendToAllClients(new Message("testing:time")
-                {
-                    ["time"] = $"{DateTime.UtcNow.Millisecond}"
-                });
                 await Task.Delay(1000);
             }
         });
@@ -51,7 +62,7 @@ public static class Program
 
     private static async Task ClientMain()
     {
-        var client = new Client<TCPNetworkingLayer>(ClientInitializationOptions.Default);
+        var client = new Client<TCPNetworkingLayer>(ClientInitializationOptions.Default with { FunctionTimeout = 1000 }); // short timeout for testing
 
         client.OnConnection += () => Log.Network("Connected");
         client.OnMessage += (m) => Log.Network($"{m.id}");
@@ -70,10 +81,20 @@ public static class Program
         {
             while (true)
             {
-                client.Send(new Message("testing:time")
+                const int left = 1;
+                const int right = 2;
+
+                var results = await client.CallFunction("addition", new Dictionary<string, string>()
                 {
-                    ["time"] = $"{DateTime.UtcNow.Millisecond}"
+                    ["left"] = $"{left}",
+                    ["right"] = $"{right}"
                 });
+
+                if (results.TryGetValue("result", out var numericalResults))
+                    Log.Debug($"{left} + {right} = {numericalResults}");
+                else
+                    Log.Error($"Couldn't get result. Error value: {results["artimora:error"]}");
+
                 await Task.Delay(1000);
             }
         });
