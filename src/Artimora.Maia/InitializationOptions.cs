@@ -3,6 +3,8 @@ namespace Artimora.Maia;
 public record BaseInitializationOptions(HandlerMetaData.Side Side)
 {
     public int Port = 8080;
+    
+    public int TickDelay = 100;
 
     /// <summary>
     /// Time in milliseconds to wait for a function call result before returning a timeout error.

@@ -31,7 +31,7 @@ public static class Program
         server.RegisterFunction("addition", (args =>
         {
             Thread.Sleep(Random.Range(250, 1500)); // testing timeouts
-            
+
             var left = int.Parse(args["left"]);
             var right = int.Parse(args["right"]);
 
@@ -43,14 +43,7 @@ public static class Program
             };
         }));
 
-        Task.BackgroundRun(async () =>
-        {
-            while (true)
-            {
-                server.Tick();
-                await Task.Delay(100);
-            }
-        });
+        Task.BackgroundRun(server.Listen);
 
         await Task.Run(async () =>
         {
@@ -69,14 +62,7 @@ public static class Program
         client.OnMessage += (m) => Log.Network($"{m.id}");
         client.OnDisconnect += () => Log.Network("Disconnected");
 
-        Task.BackgroundRun(async () =>
-        {
-            while (true)
-            {
-                client.Tick();
-                await Task.Delay(100);
-            }
-        });
+        Task.BackgroundRun(client.Listen);
 
         await Task.Run(async () =>
         {
