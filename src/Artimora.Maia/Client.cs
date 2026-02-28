@@ -9,12 +9,14 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public Action OnDisconnect = null!;
 
     private readonly IFunctionHandler functions;
-    
+
     // highkey the main reason a Shutdown and shouldRun duo is used here is that i have zero idea how CancellationToken works
     private bool shouldRun = true;
     public void Shutdown() => shouldRun = false;
-    
+
     private readonly int tickDelay = 100;
+
+    private Guid clientId = Guid.NewGuid();
 
     public Client() : this(ClientInitializationOptions.Default)
     {
@@ -22,11 +24,20 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
 
     public Client(ClientInitializationOptions options)
     {
-        network.StartClient(options);
+        OnMessage += m =>
+        {
+            if (m.id == "artimora:identity_request")
+                Send(new Message("artimora:identity")
+                {
+                    ["id"] = clientId.ToString()
+                });
+        };
 
         network.SetOnMessage((m) => OnMessage?.Invoke(Message.Deserialize(m.data)));
         network.SetOnConnection(_ => OnConnection?.Invoke());
         network.SetOnDisconnect(_ => OnDisconnect?.Invoke());
+
+        network.StartClient(options);
 
         functions = options.FunctionHandler;
         functions.SetOptions(options);
@@ -35,13 +46,13 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
             if (m.TargetSide == HandlerMetaData.Side.Server)
                 Send(m.MessageContents);
         });
-        OnMessage += (message => functions.OnMessage(-1, message));
-        
+        OnMessage += message => functions.OnMessage(-1, message);
+
         tickDelay = Math.Clamp(options.TickDelay, 0, int.MaxValue);
     }
 
     public void Send(Message message) => network.Send(message.Serialize());
-    
+
     public async Task Listen()
     {
         while (shouldRun)
@@ -49,6 +60,7 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
             network.Tick();
             await Task.Delay(tickDelay);
         }
+
         network.Stop();
     }
 

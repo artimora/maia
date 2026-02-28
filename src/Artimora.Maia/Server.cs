@@ -1,3 +1,5 @@
+using CopperDevs.Celesium;
+
 namespace Artimora.Maia;
 
 public class Server<TLayer> where TLayer : NetworkLayer, new()
@@ -16,17 +18,34 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
 
     private readonly int tickDelay = 100;
 
+    private Guid?[] clientIdentities = [];
+
+    public Guid?[] GetClientIdentities() => clientIdentities;
+
+    private void RequestIdentities()
+    {
+        SendToAllClients(new Message("artimora:identity_request"));
+    }
+
     public Server() : this(ServerInitializationOptions.Default)
     {
     }
 
     public Server(ServerInitializationOptions options)
     {
-        network.StartServer(options);
+        OnClientConnect += _ => { AdjustIdentitiesCatalog(); };
+        OnClientDisconnect += _ => { AdjustIdentitiesCatalog(); };
+        OnMessage += m =>
+        {
+            if (m.message.id == "artimora:identity")
+                clientIdentities[GetClients().IndexOf(m.client)] = Guid.Parse(m.message["id"]);
+        };
 
         network.SetOnMessage((m) => OnMessage?.Invoke((m.client, Message.Deserialize(m.data))));
         network.SetOnConnection(m => OnClientConnect?.Invoke(m.clientId ?? -1));
         network.SetOnDisconnect(m => OnClientDisconnect?.Invoke(m.clientId ?? -1));
+
+        network.StartServer(options);
 
         functions = options.FunctionHandler;
         functions.SetOptions(options);
@@ -38,6 +57,26 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
         OnMessage += (data => functions.OnMessage(data.client, data.message));
 
         tickDelay = Math.Clamp(options.TickDelay, 0, int.MaxValue);
+
+        return;
+
+        void AdjustIdentitiesCatalog()
+        {
+            Task.BackgroundRun(async () =>
+            {
+                await Task.Delay(10); // delay moment
+                
+                Log.Debug($"length {GetClients().Length}");
+                Array.Resize(ref clientIdentities, GetClients().Length);
+
+                for (var j = 0; j < clientIdentities.Length; j++)
+                {
+                    clientIdentities[j] = null;
+                }
+
+                RequestIdentities();
+            });
+        }
     }
 
     public void SendToClient(int id, Message message) => network.SendToClient(id, message.Serialize());
@@ -53,6 +92,7 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
             network.Tick();
             await Task.Delay(tickDelay);
         }
+
         network.Stop();
     }
 
