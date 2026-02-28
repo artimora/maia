@@ -30,7 +30,10 @@ public static class Program
 
         server.RegisterFunction("addition", (args =>
         {
-            Thread.Sleep(Random.Range(250, 1500)); // testing timeouts
+            var time = Random.Range(250, 1500);
+            Thread.Sleep(time); // testing timeouts
+            
+            Log.Debug($"sleep: {time}");
 
             var left = int.Parse(args["left"]);
             var right = int.Parse(args["right"]);
@@ -49,8 +52,8 @@ public static class Program
         {
             while (true)
             {
-                Log.Debug(server.GetClients().Select(i => i.ToString()).ToArray().AddFirstItem("Clients"));
-                Log.Debug(server.GetClientIdentities().Select(i => i is null ? "null" : i.ToString()).ToArray().AddFirstItem($"Client Identities ({server.GetClientIdentities().Length})"));
+                Log.Info(server.GetClients().Select(i => i.ToString()).ToArray().AddFirstItem("Clients"));
+                Log.Info(server.GetClientIdentities().Select(i => i is null ? "null" : i.ToString()).ToArray().AddFirstItem($"Client Identities ({server.GetClientIdentities().Length})"));
                 await Task.Delay(1000);
             }
         });
@@ -72,13 +75,13 @@ public static class Program
             {
                 const int left = 1;
                 const int right = 2;
-                
+
                 var results = await client.CallFunction("addition", new Dictionary<string, string>()
                 {
                     ["left"] = $"{left}",
                     ["right"] = $"{right}"
                 });
-                
+
                 if (results.TryGetValue("result", out var numericalResults))
                     Log.Debug($"{left} + {right} = {numericalResults}");
                 else
