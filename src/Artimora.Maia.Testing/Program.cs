@@ -32,7 +32,7 @@ public static class Program
         {
             var time = Random.Range(250, 1500);
             Thread.Sleep(time); // testing timeouts
-            
+
             Log.Debug($"sleep: {time}");
 
             var left = int.Parse(args["left"]);
@@ -71,7 +71,7 @@ public static class Program
 
         await Task.Run(async () =>
         {
-            while (true)
+            while (client.ShouldRun())
             {
                 const int left = 1;
                 const int right = 2;

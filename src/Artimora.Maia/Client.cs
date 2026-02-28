@@ -13,6 +13,8 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     // highkey the main reason a Shutdown and shouldRun duo is used here is that i have zero idea how CancellationToken works
     private bool shouldRun = true;
     public void Shutdown() => shouldRun = false;
+    
+    public bool ShouldRun() => shouldRun;
 
     private readonly int tickDelay = 100;
 
@@ -32,6 +34,8 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
                     ["id"] = clientId.ToString()
                 });
         };
+
+        OnDisconnect += Shutdown;
 
         network.SetOnMessage((m) => OnMessage?.Invoke(Message.Deserialize(m.data)));
         network.SetOnConnection(_ => OnConnection?.Invoke());
