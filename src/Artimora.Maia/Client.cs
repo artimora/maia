@@ -1,3 +1,5 @@
+using CopperDevs.Celesium;
+
 namespace Artimora.Maia;
 
 public class Client<TLayer> where TLayer : NetworkLayer, new()
@@ -8,15 +10,20 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public Action OnConnection = null!;
     public Action OnDisconnect = null!;
 
+    private readonly Action onReconnectFailure = null!;
+    private readonly Action<int> onReconnectAttempt = null!;
+
     private readonly IFunctionHandler functions;
 
     // highkey the main reason a Shutdown and shouldRun duo is used here is that i have zero idea how CancellationToken works
     private bool shouldRun = true;
     public void Shutdown() => shouldRun = false;
 
-    private readonly int tickDelay = 100;
+    public bool ShouldRun() => shouldRun;
 
-    private Guid clientId = Guid.NewGuid();
+    private readonly int tickDelay;
+
+    private readonly Guid clientId = Guid.NewGuid();
 
     public Client() : this(ClientInitializationOptions.Default)
     {
@@ -33,9 +40,14 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
                 });
         };
 
+        onReconnectFailure += Shutdown;
+        onReconnectAttempt += attempt => { Log.Runtime($"Reconnection attempt {attempt}"); };
+
         network.SetOnMessage((m) => OnMessage?.Invoke(Message.Deserialize(m.data)));
         network.SetOnConnection(_ => OnConnection?.Invoke());
         network.SetOnDisconnect(_ => OnDisconnect?.Invoke());
+        network.SetOnReconnectFailure(() => onReconnectFailure?.Invoke());
+        network.SetOnReconnectAttempt(attempt => onReconnectAttempt?.Invoke(attempt));
 
         network.StartClient(options);
 
@@ -87,7 +99,14 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     /// <remarks>
     /// If <c>artimora:error</c> is anything other than <c>none</c>, function result entries may be missing.
     /// </remarks>
-    public Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string> args) => functions.CallFunction(functionName, args);
+    public Task<Dictionary<string, string>> CallFunction(string functionName, Dictionary<string, string> args)
+    {
+        if (network.GetState() != NetworkLayerState.Disconnected)
+            return functions.CallFunction(functionName, args);
+
+        Log.Error("Client is currently disconnected.");
+        return Task.FromResult(new Dictionary<string, string> { ["artimora:error"] = "disconnected" });
+    }
 
     /// <summary>
     /// Registers a client-side function that can be invoked by the server.

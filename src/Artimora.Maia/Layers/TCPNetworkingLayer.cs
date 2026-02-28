@@ -11,16 +11,20 @@ public sealed class TCPNetworkingLayer : NetworkLayer
 
     // server
     private TcpListener? listener;
-    private readonly List<TcpClient> clients = [];
+    private readonly Dictionary<int, TcpClient> clients = [];
+    private readonly Dictionary<TcpClient, int> clientIds = [];
     private readonly Dictionary<TcpClient, byte[]> serverRecv = new(); // per-client stream buffer
+    private readonly object serverSync = new();
+    private int nextClientId = 1;
 
     // client
     private TcpClient? client;
-    private ClientInitializationOptions clientOptions;
+    private ClientInitializationOptions clientOptions = ClientInitializationOptions.Default;
     private bool hasClientOptions;
     private bool shouldReconnect;
     private int reconnectAttempts;
     private DateTime? nextReconnectAtUtc;
+    private bool reconnectFailureNotified;
 
     // generic
     private readonly List<byte[]> sendQueue = []; // store unframed
@@ -29,6 +33,8 @@ public sealed class TCPNetworkingLayer : NetworkLayer
     private Action<(int client, byte[] data)>? onMessage;
     private Action<HandlerMetaData>? onConnection;
     private Action<HandlerMetaData>? onDisconnect;
+    private Action? onReconnectFailure;
+    private Action<int>? onReconnectAttempt;
 
     // client stream buffer
     private byte[] clientRecv = [];
@@ -38,6 +44,8 @@ public sealed class TCPNetworkingLayer : NetworkLayer
     public override void SetOnMessage(Action<(int client, byte[] data)> handler) => onMessage = handler;
     public override void SetOnConnection(Action<HandlerMetaData> handler) => onConnection = handler;
     public override void SetOnDisconnect(Action<HandlerMetaData> handler) => onDisconnect = handler;
+    public override void SetOnReconnectFailure(Action handler) => onReconnectFailure = handler;
+    public override void SetOnReconnectAttempt(Action<int> handler) => onReconnectAttempt = handler;
 
     public override void StartServer(ServerInitializationOptions options)
     {
@@ -60,10 +68,10 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         clientOptions = options;
         hasClientOptions = true;
 
-        // Your C# options always has AutoReconnect struct; treat MaxAttempts <= 0 as "disabled"
         shouldReconnect = options.AutoReconnect.MaxAttempts > 0;
         reconnectAttempts = 0;
         nextReconnectAtUtc = null;
+        reconnectFailureNotified = false;
 
         ConnectClient(options);
     }
@@ -84,12 +92,17 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         {
             case NetworkLayerState.Server:
             {
-                for (var i = clients.Count - 1; i >= 0; i--)
+                TcpClient[] snapshot;
+                lock (serverSync)
                 {
-                    var c = clients[i];
-                    if (!TryWrite(c, framed))
+                    snapshot = clients.Values.ToArray();
+                }
+
+                foreach (var connectedClient in snapshot)
+                {
+                    if (!TryWrite(connectedClient, framed))
                     {
-                        CloseServerClient(c);
+                        CloseServerClient(connectedClient);
                     }
                 }
 
@@ -115,22 +128,25 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         if (currentState != NetworkLayerState.Server)
             throw new InvalidOperationException("sendToClient only valid in server mode.");
 
-        var index = clientId - 1;
-        if (index < 0 || index >= clients.Count)
-            throw new ArgumentOutOfRangeException(nameof(clientId), "Invalid client ID");
+        TcpClient targetClient;
+        lock (serverSync)
+        {
+            if (!clients.TryGetValue(clientId, out var foundClient) || foundClient is null)
+                throw new ArgumentOutOfRangeException(nameof(clientId), "Invalid client ID");
+
+            targetClient = foundClient;
+        }
 
         var framed = Frame(data);
-
-        var targetClient = clients[index];
         if (!TryWrite(targetClient, framed)) CloseServerClient(targetClient);
     }
 
     public override int[] GetClients()
     {
-        // IDs are 1-based, matching the logic found in electra (index + 1)
-        var ids = new int[clients.Count];
-        for (var i = 0; i < clients.Count; i++) ids[i] = i + 1;
-        return ids;
+        lock (serverSync)
+        {
+            return clients.Keys.Order().ToArray();
+        }
     }
 
     public override void Stop()
@@ -139,16 +155,28 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         nextReconnectAtUtc = null;
         hasClientOptions = false;
         reconnectAttempts = 0;
+        reconnectFailureNotified = false;
 
         if (currentState == NetworkLayerState.Server)
         {
-            for (var i = clients.Count - 1; i >= 0; i--)
+            TcpClient[] snapshot;
+            lock (serverSync)
             {
-                CloseServerClient(clients[i], fireDisconnect: false);
+                snapshot = clients.Values.ToArray();
             }
 
-            clients.Clear();
-            serverRecv.Clear();
+            foreach (var connectedClient in snapshot)
+            {
+                CloseServerClient(connectedClient, fireDisconnect: false);
+            }
+
+            lock (serverSync)
+            {
+                clients.Clear();
+                clientIds.Clear();
+                serverRecv.Clear();
+                nextClientId = 1;
+            }
 
             try
             {
@@ -173,6 +201,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         onMessage = null;
         onConnection = null;
         onDisconnect = null;
+        onReconnectFailure = null;
     }
 
     public override void Tick()
@@ -205,10 +234,15 @@ public sealed class TCPNetworkingLayer : NetworkLayer
                 var socket = listener.AcceptTcpClient();
                 socket.NoDelay = true;
 
-                clients.Add(socket);
-                serverRecv[socket] = [];
+                int clientId;
+                lock (serverSync)
+                {
+                    clientId = nextClientId++;
+                    clients[clientId] = socket;
+                    clientIds[socket] = clientId;
+                    serverRecv[socket] = [];
+                }
 
-                var clientId = clients.Count; // 1-based
                 onConnection?.Invoke(new HandlerMetaData(clientId, HandlerMetaData.Side.Server));
             }
         }
@@ -220,11 +254,14 @@ public sealed class TCPNetworkingLayer : NetworkLayer
 
     private void TickServerRead()
     {
-        for (var i = clients.Count - 1; i >= 0; i--)
+        KeyValuePair<int, TcpClient>[] snapshot;
+        lock (serverSync)
         {
-            var targetClient = clients[i];
-            var clientId = i + 1;
+            snapshot = clients.ToArray();
+        }
 
+        foreach (var (clientId, targetClient) in snapshot)
+        {
             if (!targetClient.Connected || IsRemoteDisconnected(targetClient))
             {
                 CloseServerClient(targetClient);
@@ -240,8 +277,14 @@ public sealed class TCPNetworkingLayer : NetworkLayer
 
             if (!stream.DataAvailable) continue;
 
-            if (!serverRecv.TryGetValue(targetClient, out var recv))
-                recv = [];
+            byte[] recv;
+            lock (serverSync)
+            {
+                if (!serverRecv.TryGetValue(targetClient, out var existingRecv))
+                    recv = [];
+                else
+                    recv = existingRecv;
+            }
 
             if (!TryReadAvailable(stream, ref recv))
             {
@@ -263,19 +306,32 @@ public sealed class TCPNetworkingLayer : NetworkLayer
                 continue;
             }
 
-            serverRecv[targetClient] = recv; // write back updated buffer
+            lock (serverSync)
+            {
+                if (serverRecv.ContainsKey(targetClient))
+                    serverRecv[targetClient] = recv; // write back updated buffer
+            }
         }
     }
 
     private void CloseServerClient(TcpClient targetClient, bool fireDisconnect = true)
     {
-        var idx = clients.IndexOf(targetClient);
-        int? clientId = idx >= 0 ? idx + 1 : null;
+        int? clientId;
+        lock (serverSync)
+        {
+            clientId = null;
+            if (clientIds.TryGetValue(targetClient, out var mappedClientId))
+            {
+                clientId = mappedClientId;
+                clients.Remove(mappedClientId);
+                clientIds.Remove(targetClient);
+            }
+
+            serverRecv.Remove(targetClient);
+        }
 
         if (fireDisconnect && clientId.HasValue)
             onDisconnect?.Invoke(new HandlerMetaData(clientId, HandlerMetaData.Side.Server));
-
-        serverRecv.Remove(targetClient);
 
         try
         {
@@ -285,8 +341,6 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         {
             /* once again, idgaf */
         }
-
-        clients.Remove(targetClient);
     }
 
     private void ConnectClient(ClientInitializationOptions options)
@@ -304,6 +358,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
             currentState = NetworkLayerState.Client;
             reconnectAttempts = 0;
             nextReconnectAtUtc = null;
+            reconnectFailureNotified = false;
 
             onConnection?.Invoke(new HandlerMetaData(null, HandlerMetaData.Side.Client));
 
@@ -404,8 +459,12 @@ public sealed class TCPNetworkingLayer : NetworkLayer
 
     private void ScheduleReconnect()
     {
-        if (!shouldReconnect) return;
-        if (!hasClientOptions) return;
+        if (!shouldReconnect || !hasClientOptions)
+        {
+            NotifyReconnectFailure();
+            return;
+        }
+
         if (nextReconnectAtUtc != null) return; // already scheduled
         if (currentState != NetworkLayerState.Disconnected) return;
 
@@ -415,10 +474,22 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         var maxAttempts = cfg.MaxAttempts;
 
         if (maxAttempts > 0 && reconnectAttempts >= maxAttempts)
+        {
+            NotifyReconnectFailure();
             return;
+        }
 
         reconnectAttempts++;
+        onReconnectAttempt?.Invoke(reconnectAttempts);
         nextReconnectAtUtc = DateTime.UtcNow.AddMilliseconds(delayMs);
+    }
+
+    private void NotifyReconnectFailure()
+    {
+        if (reconnectFailureNotified) return;
+        reconnectFailureNotified = true;
+        nextReconnectAtUtc = null;
+        onReconnectFailure?.Invoke();
     }
 
     private static byte[] Frame(byte[] payload)
