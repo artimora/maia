@@ -70,19 +70,19 @@ public static class Program
         {
             while (true)
             {
-                // const int left = 1;
-                // const int right = 2;
-                //
-                // var results = await client.CallFunction("addition", new Dictionary<string, string>()
-                // {
-                //     ["left"] = $"{left}",
-                //     ["right"] = $"{right}"
-                // });
-                //
-                // if (results.TryGetValue("result", out var numericalResults))
-                //     Log.Debug($"{left} + {right} = {numericalResults}");
-                // else
-                //     Log.Error($"Couldn't get result. Error value: {results["artimora:error"]}");
+                const int left = 1;
+                const int right = 2;
+                
+                var results = await client.CallFunction("addition", new Dictionary<string, string>()
+                {
+                    ["left"] = $"{left}",
+                    ["right"] = $"{right}"
+                });
+                
+                if (results.TryGetValue("result", out var numericalResults))
+                    Log.Debug($"{left} + {right} = {numericalResults}");
+                else
+                    Log.Error($"Couldn't get result. Error value: {results["artimora:error"]}");
 
                 await Task.Delay(1000);
             }

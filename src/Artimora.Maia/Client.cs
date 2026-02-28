@@ -16,7 +16,7 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
 
     private readonly int tickDelay = 100;
 
-    private Guid clientId = Guid.NewGuid();
+    private readonly Guid clientId = Guid.NewGuid();
 
     public Client() : this(ClientInitializationOptions.Default)
     {
