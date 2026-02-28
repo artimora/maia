@@ -19,13 +19,11 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
     private readonly int tickDelay = 100;
 
     private Guid?[] clientIdentities = [];
+    private void RequestIdentities() => SendToAllClients(new Message("artimora:identity_request"));
 
     public Guid?[] GetClientIdentities() => clientIdentities;
-
-    private void RequestIdentities()
-    {
-        SendToAllClients(new Message("artimora:identity_request"));
-    }
+    public Guid? GetClientIdentity(int clientId) => clientIdentities[GetClients().IndexOf(clientId)];
+    public int GetClientId(Guid clientIdentity) => GetClients()[clientIdentities.IndexOf(clientIdentity)];
 
     public Server() : this(ServerInitializationOptions.Default)
     {
