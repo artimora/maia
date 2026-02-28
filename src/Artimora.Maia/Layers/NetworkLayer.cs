@@ -35,4 +35,6 @@ public abstract class NetworkLayer
     public abstract void SetOnMessage(Action<(int client, byte[] data)> handler);
     public abstract void SetOnConnection(Action<HandlerMetaData> handler);
     public abstract void SetOnDisconnect(Action<HandlerMetaData> handler);
+    public abstract void SetOnReconnectFailure(Action handler);
+    public abstract void SetOnReconnectAttempt(Action<int> handler);
 }

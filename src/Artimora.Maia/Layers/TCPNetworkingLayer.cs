@@ -24,6 +24,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
     private bool shouldReconnect;
     private int reconnectAttempts;
     private DateTime? nextReconnectAtUtc;
+    private bool reconnectFailureNotified;
 
     // generic
     private readonly List<byte[]> sendQueue = []; // store unframed
@@ -32,6 +33,8 @@ public sealed class TCPNetworkingLayer : NetworkLayer
     private Action<(int client, byte[] data)>? onMessage;
     private Action<HandlerMetaData>? onConnection;
     private Action<HandlerMetaData>? onDisconnect;
+    private Action? onReconnectFailure;
+    private Action<int>? onReconnectAttempt;
 
     // client stream buffer
     private byte[] clientRecv = [];
@@ -41,6 +44,8 @@ public sealed class TCPNetworkingLayer : NetworkLayer
     public override void SetOnMessage(Action<(int client, byte[] data)> handler) => onMessage = handler;
     public override void SetOnConnection(Action<HandlerMetaData> handler) => onConnection = handler;
     public override void SetOnDisconnect(Action<HandlerMetaData> handler) => onDisconnect = handler;
+    public override void SetOnReconnectFailure(Action handler) => onReconnectFailure = handler;
+    public override void SetOnReconnectAttempt(Action<int> handler) => onReconnectAttempt = handler;
 
     public override void StartServer(ServerInitializationOptions options)
     {
@@ -63,10 +68,10 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         clientOptions = options;
         hasClientOptions = true;
 
-        // Your C# options always has AutoReconnect struct; treat MaxAttempts <= 0 as "disabled"
         shouldReconnect = options.AutoReconnect.MaxAttempts > 0;
         reconnectAttempts = 0;
         nextReconnectAtUtc = null;
+        reconnectFailureNotified = false;
 
         ConnectClient(options);
     }
@@ -150,6 +155,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         nextReconnectAtUtc = null;
         hasClientOptions = false;
         reconnectAttempts = 0;
+        reconnectFailureNotified = false;
 
         if (currentState == NetworkLayerState.Server)
         {
@@ -195,6 +201,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         onMessage = null;
         onConnection = null;
         onDisconnect = null;
+        onReconnectFailure = null;
     }
 
     public override void Tick()
@@ -334,7 +341,6 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         {
             /* once again, idgaf */
         }
-
     }
 
     private void ConnectClient(ClientInitializationOptions options)
@@ -352,6 +358,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
             currentState = NetworkLayerState.Client;
             reconnectAttempts = 0;
             nextReconnectAtUtc = null;
+            reconnectFailureNotified = false;
 
             onConnection?.Invoke(new HandlerMetaData(null, HandlerMetaData.Side.Client));
 
@@ -452,8 +459,12 @@ public sealed class TCPNetworkingLayer : NetworkLayer
 
     private void ScheduleReconnect()
     {
-        if (!shouldReconnect) return;
-        if (!hasClientOptions) return;
+        if (!shouldReconnect || !hasClientOptions)
+        {
+            NotifyReconnectFailure();
+            return;
+        }
+
         if (nextReconnectAtUtc != null) return; // already scheduled
         if (currentState != NetworkLayerState.Disconnected) return;
 
@@ -463,10 +474,22 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         var maxAttempts = cfg.MaxAttempts;
 
         if (maxAttempts > 0 && reconnectAttempts >= maxAttempts)
+        {
+            NotifyReconnectFailure();
             return;
+        }
 
         reconnectAttempts++;
+        onReconnectAttempt?.Invoke(reconnectAttempts);
         nextReconnectAtUtc = DateTime.UtcNow.AddMilliseconds(delayMs);
+    }
+
+    private void NotifyReconnectFailure()
+    {
+        if (reconnectFailureNotified) return;
+        reconnectFailureNotified = true;
+        nextReconnectAtUtc = null;
+        onReconnectFailure?.Invoke();
     }
 
     private static byte[] Frame(byte[] payload)

@@ -83,7 +83,7 @@ public static class Program
                 });
 
                 if (results.TryGetValue("result", out var numericalResults))
-                    Log.Debug($"{left} + {right} = {numericalResults}");
+                    Log.Info($"{left} + {right} = {numericalResults}");
                 else
                     Log.Error($"Couldn't get result. Error value: {results["artimora:error"]}");
 

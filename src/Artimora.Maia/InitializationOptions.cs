@@ -3,7 +3,7 @@ namespace Artimora.Maia;
 public record BaseInitializationOptions(HandlerMetaData.Side Side)
 {
     public int Port = 8080;
-    
+
     public int TickDelay = 100;
 
     /// <summary>
@@ -21,7 +21,11 @@ public record ClientInitializationOptions() : BaseInitializationOptions(HandlerM
 {
     public string Host = "127.0.0.1";
 
-    public AutoReconnectOptions AutoReconnect = default;
+    public AutoReconnectOptions AutoReconnect = new()
+    {
+        DelayMs = 2000,
+        MaxAttempts = 10
+    };
 
     public record struct AutoReconnectOptions()
     {
