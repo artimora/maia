@@ -225,7 +225,7 @@ public sealed class TCPNetworkingLayer : NetworkLayer
             var targetClient = clients[i];
             var clientId = i + 1;
 
-            if (!targetClient.Connected)
+            if (!targetClient.Connected || IsRemoteDisconnected(targetClient))
             {
                 CloseServerClient(targetClient);
                 continue;
@@ -322,6 +322,13 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         if (client is not { Connected: true })
         {
             // treat as closed
+            CloseClientSocket(fireDisconnect: true);
+            ScheduleReconnect();
+            return;
+        }
+
+        if (IsRemoteDisconnected(client))
+        {
             CloseClientSocket(fireDisconnect: true);
             ScheduleReconnect();
             return;
@@ -472,6 +479,19 @@ public sealed class TCPNetworkingLayer : NetworkLayer
         catch
         {
             return null;
+        }
+    }
+
+    private static bool IsRemoteDisconnected(TcpClient c)
+    {
+        try
+        {
+            var socket = c.Client;
+            return socket.Poll(0, SelectMode.SelectRead) && socket.Available == 0;
+        }
+        catch
+        {
+            return true;
         }
     }
 

@@ -49,6 +49,7 @@ public static class Program
         {
             while (true)
             {
+                Log.Debug(server.GetClients());
                 await Task.Delay(1000);
             }
         });
