@@ -9,6 +9,12 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public Action OnDisconnect = null!;
 
     private readonly IFunctionHandler functions;
+    
+    // highkey the main reason a Shutdown and shouldRun duo is used here is that i have zero idea how CancellationToken works
+    private bool shouldRun = true;
+    public void Shutdown() => shouldRun = false;
+    
+    private readonly int tickDelay = 100;
 
     public Client() : this(ClientInitializationOptions.Default)
     {
@@ -30,12 +36,21 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
                 Send(m.MessageContents);
         });
         OnMessage += (message => functions.OnMessage(-1, message));
+        
+        tickDelay = Math.Clamp(options.TickDelay, 0, int.MaxValue);
     }
 
     public void Send(Message message) => network.Send(message.Serialize());
-
-    public void Stop() => network.Stop();
-    public void Tick() => network.Tick();
+    
+    public async Task Listen()
+    {
+        while (shouldRun)
+        {
+            network.Tick();
+            await Task.Delay(tickDelay);
+        }
+        network.Stop();
+    }
 
     /// <summary>
     /// Calls a function on the connected server with no arguments.

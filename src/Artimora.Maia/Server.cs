@@ -10,6 +10,12 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
 
     private readonly IFunctionHandler functions;
 
+    // highkey the main reason a Shutdown and shouldRun duo is used here is that i have zero idea how CancellationToken works
+    private bool shouldRun = true;
+    public void Shutdown() => shouldRun = false;
+
+    private readonly int tickDelay = 100;
+
     public Server() : this(ServerInitializationOptions.Default)
     {
     }
@@ -30,6 +36,8 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
                 SendToClient(m.TargetClient, m.MessageContents);
         });
         OnMessage += (data => functions.OnMessage(data.client, data.message));
+
+        tickDelay = Math.Clamp(options.TickDelay, 0, int.MaxValue);
     }
 
     public void SendToClient(int id, Message message) => network.SendToClient(id, message.Serialize());
@@ -38,9 +46,15 @@ public class Server<TLayer> where TLayer : NetworkLayer, new()
 
     public int[] GetClients() => network.GetClients();
 
-    public void Stop() => network.Stop();
-
-    public void Tick() => network.Tick();
+    public async Task Listen()
+    {
+        while (shouldRun)
+        {
+            network.Tick();
+            await Task.Delay(tickDelay);
+        }
+        network.Stop();
+    }
 
     /// <summary>
     /// Calls a function on a specific connected client.
