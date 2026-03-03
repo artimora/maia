@@ -61,7 +61,15 @@ public static class Program
 
     private static async Task ClientMain()
     {
-        var client = new Client<TCPNetworkingLayer>(ClientInitializationOptions.Default with { FunctionTimeout = 1000 }); // short timeout for testing
+        var client = new Client<TCPNetworkingLayer>(ClientInitializationOptions.Default with
+        {
+            FunctionTimeout = 1000,
+            AutoReconnect = new ClientInitializationOptions.AutoReconnectOptions
+            {
+                DelayMs = 100,
+                MaxAttempts = 5
+            }
+        }); // short timeout for testing
 
         client.OnConnection += () => Log.Network("Connected");
         client.OnMessage += (m) => Log.Network($"{m.id}");

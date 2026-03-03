@@ -10,13 +10,14 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
     public Action OnConnection = null!;
     public Action OnDisconnect = null!;
 
-    private readonly Action onReconnectFailure = null!;
-    private readonly Action<int> onReconnectAttempt = null!;
+    public readonly Action OnReconnectFailure = null!;
+    public readonly Action<int> OnReconnectAttempt = null!;
 
     private readonly IFunctionHandler functions;
 
     // highkey the main reason a Shutdown and shouldRun duo is used here is that i have zero idea how CancellationToken works
     private bool shouldRun = true;
+
     public void Shutdown() => shouldRun = false;
 
     public bool ShouldRun() => shouldRun;
@@ -40,14 +41,14 @@ public class Client<TLayer> where TLayer : NetworkLayer, new()
                 });
         };
 
-        onReconnectFailure += Shutdown;
-        onReconnectAttempt += attempt => { Log.Runtime($"Reconnection attempt {attempt}"); };
+        OnReconnectFailure += Shutdown;
+        OnReconnectAttempt += attempt => { Log.Runtime($"Reconnection attempt {attempt}"); };
 
         network.SetOnMessage((m) => OnMessage?.Invoke(Message.Deserialize(m.data)));
         network.SetOnConnection(_ => OnConnection?.Invoke());
         network.SetOnDisconnect(_ => OnDisconnect?.Invoke());
-        network.SetOnReconnectFailure(() => onReconnectFailure?.Invoke());
-        network.SetOnReconnectAttempt(attempt => onReconnectAttempt?.Invoke(attempt));
+        network.SetOnReconnectFailure(() => OnReconnectFailure?.Invoke());
+        network.SetOnReconnectAttempt(attempt => OnReconnectAttempt?.Invoke(attempt));
 
         network.StartClient(options);
 
