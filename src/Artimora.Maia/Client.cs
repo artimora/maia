@@ -5,6 +5,7 @@ namespace Artimora.Maia;
 public class Client<TLayer> where TLayer : NetworkLayer, new()
 {
     private readonly NetworkLayer network = new TLayer();
+    public NetworkLayerState GetNetworkState() => network.GetState();
 
     public Action<Message> OnMessage = null!;
     public Action OnConnection = null!;
